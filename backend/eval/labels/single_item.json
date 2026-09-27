@@ -1,0 +1,20 @@
+{
+  "vendor": "Omni Software Pvt Ltd",
+  "invoice_number": "OMN-11",
+  "invoice_date": "2026-02-18",
+  "currency": "PKR",
+  "subtotal": 25000,
+  "tax": null,
+  "total": 25000,
+  "items": [
+    {
+      "description": "Annual software licence, 1 seat",
+      "quantity": 1,
+      "unit_price": 25000,
+      "amount": 25000
+    }
+  ],
+  "expects_issues": false,
+  "is_invoice": true,
+  "notes": "Minimal case: a single line item and no tax at all."
+}

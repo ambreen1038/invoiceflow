@@ -1,0 +1,32 @@
+{
+  "vendor": "Al-Rehman Traders",
+  "invoice_number": "INV-3002",
+  "invoice_date": "2026-02-10",
+  "currency": "PKR",
+  "subtotal": 31950,
+  "tax": 5431.5,
+  "total": 38500.0,
+  "items": [
+    {
+      "description": "USB-C charging cable, 1m",
+      "quantity": 40,
+      "unit_price": 180,
+      "amount": 7200
+    },
+    {
+      "description": "Wireless mouse, black",
+      "quantity": 15,
+      "unit_price": 950,
+      "amount": 14250
+    },
+    {
+      "description": "HDMI cable, 2m",
+      "quantity": 25,
+      "unit_price": 420,
+      "amount": 10500
+    }
+  ],
+  "expects_issues": true,
+  "is_invoice": true,
+  "notes": "Printed total is deliberately wrong; extraction should match the PRINTED (wrong) number, and validate() should flag it."
+}

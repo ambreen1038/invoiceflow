@@ -1,0 +1,26 @@
+{
+  "vendor": "Green Leaf Wellness",
+  "invoice_number": "GLW-405",
+  "invoice_date": "2026-02-19",
+  "currency": "PKR",
+  "subtotal": 8400,
+  "tax": 0.0,
+  "total": 8400,
+  "items": [
+    {
+      "description": "Yoga mat, premium",
+      "quantity": 2,
+      "unit_price": 3300,
+      "amount": 6600
+    },
+    {
+      "description": "Resistance band set",
+      "quantity": 1,
+      "unit_price": 1800,
+      "amount": 1800
+    }
+  ],
+  "expects_issues": false,
+  "is_invoice": true,
+  "notes": "Tax line is printed and explicitly 0.00, not left off the document \u2014 tests null (no line) vs explicit-zero handling."
+}

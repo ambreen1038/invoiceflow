@@ -25,3 +25,5 @@ next-env.d.ts
 Thumbs.db
 .vscode/
 .idea/
+test-data/
+backend/eval/html/

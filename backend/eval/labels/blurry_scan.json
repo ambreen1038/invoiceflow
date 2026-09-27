@@ -1,0 +1,26 @@
+{
+  "vendor": "Zaman Electric Store",
+  "invoice_number": "ZES-441",
+  "invoice_date": "2026-02-16",
+  "currency": "PKR",
+  "subtotal": 16200,
+  "tax": 2754.0,
+  "total": 18954.0,
+  "items": [
+    {
+      "description": "Ceiling fan, 56 inch",
+      "quantity": 2,
+      "unit_price": 6500,
+      "amount": 13000
+    },
+    {
+      "description": "LED bulb pack of 6",
+      "quantity": 1,
+      "unit_price": 3200,
+      "amount": 3200
+    }
+  ],
+  "expects_issues": false,
+  "is_invoice": true,
+  "notes": "Same as a clean invoice but rendered with blur + noise to simulate a poor scan."
+}

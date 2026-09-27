@@ -1,0 +1,32 @@
+{
+  "vendor": "QuickBite Cafe",
+  "invoice_number": "RCPT-5581",
+  "invoice_date": "2026-02-13",
+  "currency": "PKR",
+  "subtotal": 1610,
+  "tax": 80.5,
+  "total": 1690.5,
+  "items": [
+    {
+      "description": "Cappuccino",
+      "quantity": 2,
+      "unit_price": 350,
+      "amount": 700
+    },
+    {
+      "description": "Club sandwich",
+      "quantity": 1,
+      "unit_price": 550,
+      "amount": 550
+    },
+    {
+      "description": "Bottled water",
+      "quantity": 3,
+      "unit_price": 120,
+      "amount": 360
+    }
+  ],
+  "expects_issues": false,
+  "is_invoice": true,
+  "notes": "Narrow thermal-receipt layout instead of a formal invoice."
+}

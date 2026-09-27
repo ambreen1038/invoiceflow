@@ -1,0 +1,26 @@
+{
+  "vendor": "Bright Bakes Cafe Supplies",
+  "invoice_number": "BB-118",
+  "invoice_date": "2026-02-11",
+  "currency": "PKR",
+  "subtotal": 25500,
+  "tax": null,
+  "total": 25500,
+  "items": [
+    {
+      "description": "Office chair",
+      "quantity": 3,
+      "unit_price": 4500,
+      "amount": 13500
+    },
+    {
+      "description": "Standing desk",
+      "quantity": 1,
+      "unit_price": 12000,
+      "amount": 12000
+    }
+  ],
+  "expects_issues": false,
+  "is_invoice": true,
+  "notes": "No tax line printed at all; tax should extract as null, subtotal == total."
+}

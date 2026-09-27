@@ -1,0 +1,26 @@
+{
+  "vendor": "Silverline Tech Supplies",
+  "invoice_number": "STS-2200",
+  "invoice_date": "2026-02-14",
+  "currency": "USD",
+  "subtotal": 648.0,
+  "tax": 51.84,
+  "total": 699.84,
+  "items": [
+    {
+      "description": "USB hub, 7-port",
+      "quantity": 4,
+      "unit_price": 89.5,
+      "amount": 358.0
+    },
+    {
+      "description": "Laptop stand",
+      "quantity": 2,
+      "unit_price": 145.0,
+      "amount": 290.0
+    }
+  ],
+  "expects_issues": false,
+  "is_invoice": true,
+  "notes": "USD with a $ symbol instead of PKR \u2014 tests currency-code inference."
+}

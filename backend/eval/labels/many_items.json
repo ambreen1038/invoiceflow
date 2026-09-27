@@ -1,0 +1,68 @@
+{
+  "vendor": "Lahore Hardware Mart",
+  "invoice_number": "LHM-9910",
+  "invoice_date": "2026-02-12",
+  "currency": "PKR",
+  "subtotal": 11790,
+  "tax": 2004.3000000000002,
+  "total": 13794.3,
+  "items": [
+    {
+      "description": "Ream of A4 paper",
+      "quantity": 2,
+      "unit_price": 1200,
+      "amount": 2400
+    },
+    {
+      "description": "Ballpoint pens, blue",
+      "quantity": 10,
+      "unit_price": 25,
+      "amount": 250
+    },
+    {
+      "description": "Highlighters",
+      "quantity": 5,
+      "unit_price": 60,
+      "amount": 300
+    },
+    {
+      "description": "Stapler",
+      "quantity": 3,
+      "unit_price": 350,
+      "amount": 1050
+    },
+    {
+      "description": "Sticky notes pad",
+      "quantity": 20,
+      "unit_price": 8,
+      "amount": 160
+    },
+    {
+      "description": "Whiteboard marker set",
+      "quantity": 2,
+      "unit_price": 900,
+      "amount": 1800
+    },
+    {
+      "description": "Office chair mat",
+      "quantity": 1,
+      "unit_price": 4500,
+      "amount": 4500
+    },
+    {
+      "description": "File folders, box of 10",
+      "quantity": 4,
+      "unit_price": 220,
+      "amount": 880
+    },
+    {
+      "description": "Notebooks, A5",
+      "quantity": 6,
+      "unit_price": 75,
+      "amount": 450
+    }
+  ],
+  "expects_issues": false,
+  "is_invoice": true,
+  "notes": "9 line items \u2014 tests whether the model reads the whole table, not just the top rows."
+}

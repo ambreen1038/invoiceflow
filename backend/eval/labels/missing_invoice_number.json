@@ -1,0 +1,26 @@
+{
+  "vendor": "Falcon Traders",
+  "invoice_number": null,
+  "invoice_date": "2026-02-15",
+  "currency": "PKR",
+  "subtotal": 800,
+  "tax": 136.0,
+  "total": 936.0,
+  "items": [
+    {
+      "description": "Cotton t-shirt, plain",
+      "quantity": 10,
+      "unit_price": 60,
+      "amount": 600
+    },
+    {
+      "description": "Tote bag",
+      "quantity": 5,
+      "unit_price": 40,
+      "amount": 200
+    }
+  ],
+  "expects_issues": true,
+  "is_invoice": true,
+  "notes": "No invoice number printed on the document at all \u2014 should extract as null and our completeness check should flag the missing field, not have the model invent one."
+}

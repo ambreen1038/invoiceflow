@@ -1,0 +1,13 @@
+{
+  "vendor": null,
+  "invoice_number": null,
+  "invoice_date": null,
+  "currency": null,
+  "subtotal": null,
+  "tax": null,
+  "total": null,
+  "items": [],
+  "is_invoice": false,
+  "expects_issues": true,
+  "notes": "Not an invoice at all (meeting notes) \u2014 negative control. A good result is everything null / flagged, NOT a hallucinated invoice."
+}

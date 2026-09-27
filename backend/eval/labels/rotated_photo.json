@@ -1,0 +1,26 @@
+{
+  "vendor": "Zaman Auto Parts",
+  "invoice_number": "ZAP-770",
+  "invoice_date": "2026-02-17",
+  "currency": "PKR",
+  "subtotal": 17200,
+  "tax": 2924.0,
+  "total": 20124.0,
+  "items": [
+    {
+      "description": "Car floor mats, set of 4",
+      "quantity": 6,
+      "unit_price": 1500,
+      "amount": 9000
+    },
+    {
+      "description": "Dashboard camera",
+      "quantity": 1,
+      "unit_price": 8200,
+      "amount": 8200
+    }
+  ],
+  "expects_issues": false,
+  "is_invoice": true,
+  "notes": "Rotated ~4.5deg and JPEG-compressed to simulate a phone photo, not a flat scan."
+}

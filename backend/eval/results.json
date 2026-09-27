@@ -1,0 +1,559 @@
+[
+  {
+    "name": "blurry_scan",
+    "notes": "Same as a clean invoice but rendered with blur + noise to simulate a poor scan.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 2,
+    "items_total": 2,
+    "doc_fully_correct": true,
+    "issues_flagged": false,
+    "expects_issues": false,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Zaman Electric Store",
+      "invoice_number": "ZES-441",
+      "invoice_date": "2026-02-16",
+      "currency": "PKR",
+      "subtotal": "16200.0",
+      "tax": "2754.0",
+      "total": "18954.0",
+      "items": [
+        {
+          "description": "Ceiling fan, 56 inch",
+          "quantity": "2.0",
+          "unit_price": "6500.0",
+          "amount": "13000.0"
+        },
+        {
+          "description": "LED bulb pack of 6",
+          "quantity": "1.0",
+          "unit_price": "3200.0",
+          "amount": "3200.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "clean_standard",
+    "notes": "Baseline: standard formal invoice, nothing unusual.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 3,
+    "items_total": 3,
+    "doc_fully_correct": true,
+    "issues_flagged": false,
+    "expects_issues": false,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Al-Rehman Traders",
+      "invoice_number": "INV-3001",
+      "invoice_date": "2026-02-10",
+      "currency": "PKR",
+      "subtotal": "31950.0",
+      "tax": "5431.5",
+      "total": "37381.5",
+      "items": [
+        {
+          "description": "USB-C charging cable, 1m",
+          "quantity": "40",
+          "unit_price": "180.0",
+          "amount": "7200.0"
+        },
+        {
+          "description": "Wireless mouse, black",
+          "quantity": "15",
+          "unit_price": "950.0",
+          "amount": "14250.0"
+        },
+        {
+          "description": "HDMI cable, 2m",
+          "quantity": "25",
+          "unit_price": "420.0",
+          "amount": "10500.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "currency_usd",
+    "notes": "USD with a $ symbol instead of PKR \u2014 tests currency-code inference.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 2,
+    "items_total": 2,
+    "doc_fully_correct": true,
+    "issues_flagged": false,
+    "expects_issues": false,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Silverline Tech Supplies",
+      "invoice_number": "STS-2200",
+      "invoice_date": "2026-02-14",
+      "currency": "USD",
+      "subtotal": "648.0",
+      "tax": "51.84",
+      "total": "699.84",
+      "items": [
+        {
+          "description": "USB hub, 7-port",
+          "quantity": "4",
+          "unit_price": "89.5",
+          "amount": "358.0"
+        },
+        {
+          "description": "Laptop stand",
+          "quantity": "2",
+          "unit_price": "145.0",
+          "amount": "290.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "explicit_zero_tax",
+    "notes": "Tax line is printed and explicitly 0.00, not left off the document \u2014 tests null (no line) vs explicit-zero handling.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 2,
+    "items_total": 2,
+    "doc_fully_correct": true,
+    "issues_flagged": false,
+    "expects_issues": false,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Green Leaf Wellness",
+      "invoice_number": "GLW-405",
+      "invoice_date": "2026-02-19",
+      "currency": "PKR",
+      "subtotal": "8400.0",
+      "tax": "0.0",
+      "total": "8400.0",
+      "items": [
+        {
+          "description": "Yoga mat, premium",
+          "quantity": "2",
+          "unit_price": "3300.0",
+          "amount": "6600.0"
+        },
+        {
+          "description": "Resistance band set",
+          "quantity": "1",
+          "unit_price": "1800.0",
+          "amount": "1800.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "many_items",
+    "notes": "9 line items \u2014 tests whether the model reads the whole table, not just the top rows.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 9,
+    "items_total": 9,
+    "doc_fully_correct": true,
+    "issues_flagged": false,
+    "expects_issues": false,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Lahore Hardware Mart",
+      "invoice_number": "LHM-9910",
+      "invoice_date": "2026-02-12",
+      "currency": "PKR",
+      "subtotal": "11790.0",
+      "tax": "2004.3",
+      "total": "13794.3",
+      "items": [
+        {
+          "description": "Ream of A4 paper",
+          "quantity": "2",
+          "unit_price": "1200.0",
+          "amount": "2400.0"
+        },
+        {
+          "description": "Ballpoint pens, blue",
+          "quantity": "10",
+          "unit_price": "25.0",
+          "amount": "250.0"
+        },
+        {
+          "description": "Highlighters",
+          "quantity": "5",
+          "unit_price": "60.0",
+          "amount": "300.0"
+        },
+        {
+          "description": "Stapler",
+          "quantity": "3",
+          "unit_price": "350.0",
+          "amount": "1050.0"
+        },
+        {
+          "description": "Sticky notes pad",
+          "quantity": "20",
+          "unit_price": "8.0",
+          "amount": "160.0"
+        },
+        {
+          "description": "Whiteboard marker set",
+          "quantity": "2",
+          "unit_price": "900.0",
+          "amount": "1800.0"
+        },
+        {
+          "description": "Office chair mat",
+          "quantity": "1",
+          "unit_price": "4500.0",
+          "amount": "4500.0"
+        },
+        {
+          "description": "File folders, box of 10",
+          "quantity": "4",
+          "unit_price": "220.0",
+          "amount": "880.0"
+        },
+        {
+          "description": "Notebooks, A5",
+          "quantity": "6",
+          "unit_price": "75.0",
+          "amount": "450.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "math_error_total",
+    "notes": "Printed total is deliberately wrong; extraction should match the PRINTED (wrong) number, and validate() should flag it.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 3,
+    "items_total": 3,
+    "doc_fully_correct": true,
+    "issues_flagged": true,
+    "expects_issues": true,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Al-Rehman Traders",
+      "invoice_number": "INV-3002",
+      "invoice_date": "2026-02-10",
+      "currency": "PKR",
+      "subtotal": "31950.0",
+      "tax": "5431.5",
+      "total": "38500.0",
+      "items": [
+        {
+          "description": "USB-C charging cable, 1m",
+          "quantity": "40",
+          "unit_price": "180.0",
+          "amount": "7200.0"
+        },
+        {
+          "description": "Wireless mouse, black",
+          "quantity": "15",
+          "unit_price": "950.0",
+          "amount": "14250.0"
+        },
+        {
+          "description": "HDMI cable, 2m",
+          "quantity": "25",
+          "unit_price": "420.0",
+          "amount": "10500.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "missing_invoice_number",
+    "notes": "No invoice number printed on the document at all \u2014 should extract as null and our completeness check should flag the missing field, not have the model invent one.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 2,
+    "items_total": 2,
+    "doc_fully_correct": true,
+    "issues_flagged": true,
+    "expects_issues": true,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Falcon Traders",
+      "invoice_number": null,
+      "invoice_date": "2026-02-15",
+      "currency": "PKR",
+      "subtotal": "800.0",
+      "tax": "136.0",
+      "total": "936.0",
+      "items": [
+        {
+          "description": "Cotton t-shirt, plain",
+          "quantity": "10",
+          "unit_price": "60.0",
+          "amount": "600.0"
+        },
+        {
+          "description": "Tote bag",
+          "quantity": "5",
+          "unit_price": "40.0",
+          "amount": "200.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "no_tax",
+    "notes": "No tax line printed at all; tax should extract as null, subtotal == total.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 2,
+    "items_total": 2,
+    "doc_fully_correct": true,
+    "issues_flagged": false,
+    "expects_issues": false,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Bright Bakes Cafe Supplies",
+      "invoice_number": "BB-118",
+      "invoice_date": "2026-02-11",
+      "currency": "PKR",
+      "subtotal": "25500.0",
+      "tax": null,
+      "total": "25500.0",
+      "items": [
+        {
+          "description": "Office chair",
+          "quantity": "3",
+          "unit_price": "4500.0",
+          "amount": "13500.0"
+        },
+        {
+          "description": "Standing desk",
+          "quantity": "1",
+          "unit_price": "12000.0",
+          "amount": "12000.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "non_invoice_photo",
+    "notes": "Not an invoice at all (meeting notes) \u2014 negative control. A good result is everything null / flagged, NOT a hallucinated invoice.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 0,
+    "items_total": 0,
+    "doc_fully_correct": true,
+    "issues_flagged": true,
+    "expects_issues": true,
+    "is_invoice_label": false,
+    "got": {
+      "vendor": null,
+      "invoice_number": null,
+      "invoice_date": null,
+      "currency": null,
+      "subtotal": null,
+      "tax": null,
+      "total": null,
+      "items": []
+    }
+  },
+  {
+    "name": "receipt_narrow",
+    "notes": "Narrow thermal-receipt layout instead of a formal invoice.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 3,
+    "items_total": 3,
+    "doc_fully_correct": true,
+    "issues_flagged": false,
+    "expects_issues": false,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "QuickBite Cafe",
+      "invoice_number": "RCPT-5581",
+      "invoice_date": "2026-02-13",
+      "currency": "PKR",
+      "subtotal": "1610.0",
+      "tax": "80.5",
+      "total": "1690.5",
+      "items": [
+        {
+          "description": "Cappuccino",
+          "quantity": "2",
+          "unit_price": "350.0",
+          "amount": "700.0"
+        },
+        {
+          "description": "Club sandwich",
+          "quantity": "1",
+          "unit_price": "550.0",
+          "amount": "550.0"
+        },
+        {
+          "description": "Bottled water",
+          "quantity": "3",
+          "unit_price": "120.0",
+          "amount": "360.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "rotated_photo",
+    "notes": "Rotated ~4.5deg and JPEG-compressed to simulate a phone photo, not a flat scan.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 2,
+    "items_total": 2,
+    "doc_fully_correct": true,
+    "issues_flagged": false,
+    "expects_issues": false,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Zaman Auto Parts",
+      "invoice_number": "ZAP-770",
+      "invoice_date": "2026-02-17",
+      "currency": "PKR",
+      "subtotal": "17200.0",
+      "tax": "2924.0",
+      "total": "20124.0",
+      "items": [
+        {
+          "description": "Car floor mats, set of 4",
+          "quantity": "6",
+          "unit_price": "1500.0",
+          "amount": "9000.0"
+        },
+        {
+          "description": "Dashboard camera",
+          "quantity": "1",
+          "unit_price": "8200.0",
+          "amount": "8200.0"
+        }
+      ]
+    }
+  },
+  {
+    "name": "single_item",
+    "notes": "Minimal case: a single line item and no tax at all.",
+    "status": "ok",
+    "fields": {
+      "vendor": true,
+      "invoice_number": true,
+      "invoice_date": true,
+      "currency": true,
+      "subtotal": true,
+      "tax": true,
+      "total": true
+    },
+    "items_matched": 1,
+    "items_total": 1,
+    "doc_fully_correct": true,
+    "issues_flagged": false,
+    "expects_issues": false,
+    "is_invoice_label": true,
+    "got": {
+      "vendor": "Omni Software Pvt Ltd",
+      "invoice_number": "OMN-11",
+      "invoice_date": "2026-02-18",
+      "currency": "PKR",
+      "subtotal": "25000.0",
+      "tax": null,
+      "total": "25000.0",
+      "items": [
+        {
+          "description": "Annual software licence, 1 seat",
+          "quantity": "1",
+          "unit_price": "25000.0",
+          "amount": "25000.0"
+        }
+      ]
+    }
+  }
+]
