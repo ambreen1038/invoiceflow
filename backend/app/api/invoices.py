@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import io
 import re
 import uuid
@@ -44,35 +45,65 @@ def _safe_name(name: str) -> str:
 
 
 @router.post("", response_model=list[InvoiceOut], status_code=status.HTTP_201_CREATED)
-async def upload(
+def upload(
     request: Request,
     files: list[UploadFile] = File(...),
     db: Session = Depends(get_db),
     user_id: uuid.UUID = Depends(current_user_id),
 ):
+    # A plain `def`, not `async def`: this does blocking I/O (sync DB calls, and — for the
+    # Supabase storage backend — a real HTTP POST per file). FastAPI/Starlette runs sync path
+    # functions in a worker thread pool automatically; an `async def` version of this same
+    # code would block the single event loop for its entire duration, freezing every other
+    # request on the server (of any user) for as long as this upload takes. Every other
+    # endpoint in this file is already a plain `def` for the same reason — this was the one
+    # exception, found by that exact symptom: uploading several files made /health itself
+    # stop responding.
     settings = get_settings()
     limit = settings.max_upload_mb * 1024 * 1024
     if not 1 <= len(files) <= 20:
         raise HTTPException(400, "Upload between 1 and 20 files at a time")
 
     prepared = []
+    seen_hashes: dict[str, str] = {}  # hash -> filename, catches duplicates within this batch
     for f in files:
-        data = await f.read(limit + 1)
+        data = f.file.read(limit + 1)  # sync read; see the note on `def upload` above
         if len(data) > limit:
             raise HTTPException(413, f"{f.filename}: larger than {settings.max_upload_mb} MB")
         ctype = f.content_type or ""
         if ctype not in ALLOWED_TYPES or not data.startswith(MAGIC[ctype]):
             raise HTTPException(415, f"{f.filename}: only PDF, PNG, JPEG or WebP files")
-        prepared.append((f.filename or "file", ctype, data))
+
+        file_hash = hashlib.sha256(data).hexdigest()
+        if file_hash in seen_hashes:
+            raise HTTPException(
+                409, f"{f.filename}: identical to {seen_hashes[file_hash]} in this same upload"
+            )
+        seen_hashes[file_hash] = f.filename or "file"
+        prepared.append((f.filename or "file", ctype, data, file_hash))
+
+    # Reject the whole batch if any file's exact bytes were already uploaded by this user —
+    # cheaper and clearer than letting it burn an extraction call only to be flagged after.
+    existing = db.scalars(
+        select(Invoice).where(Invoice.user_id == user_id, Invoice.file_hash.in_(seen_hashes))
+    ).all()
+    if existing:
+        dupe = existing[0]
+        raise HTTPException(
+            409,
+            f"This file was already uploaded as \"{dupe.filename}\" ({dupe.status}). "
+            "Delete that one first, or use Retry on it, instead of uploading it again.",
+        )
 
     storage, queue = request.app.state.storage, request.app.state.queue
     created = []
-    for name, ctype, data in prepared:
+    for name, ctype, data, file_hash in prepared:
         inv_id = uuid.uuid4()
         path = f"{user_id}/{inv_id}{ALLOWED_TYPES[ctype]}"
         storage.save(path, data, ctype)
         inv = Invoice(id=inv_id, user_id=user_id, filename=_safe_name(name),
-                      storage_path=path, content_type=ctype, status="queued", issues=[])
+                      storage_path=path, content_type=ctype, status="queued", issues=[],
+                      file_hash=file_hash)
         db.add(inv)
         db.flush()
         queue.enqueue(inv.id, db)

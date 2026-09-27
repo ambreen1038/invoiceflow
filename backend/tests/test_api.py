@@ -70,16 +70,36 @@ def test_bad_math_blocks_approval_unless_fixed_or_acknowledged(api, queue, uploa
 
 
 def test_duplicate_is_detected(api, queue, upload):
+    # Different bytes (so the file-hash check doesn't fire) but the FakeExtractor returns the
+    # same vendor/number/total for both — this is the extracted-content duplicate check.
     first = upload().json()[0]
     process_all(queue)
     got = api.http.get(f"/invoices/{first['id']}").json()
     api.http.put(f"/invoices/{first['id']}", json={**editable(got), "approve": True})
 
-    second = upload().json()[0]
+    second = upload("b.pdf", PDF + b"\n%different bytes, same fake-extracted content\n").json()[0]
     process_all(queue)
     got = api.http.get(f"/invoices/{second['id']}").json()
     assert got["is_duplicate"] is True
     assert any(i["code"] == "duplicate" for i in got["issues"])
+
+
+def test_identical_file_is_rejected_before_extraction(api, upload):
+    first = upload().json()[0]
+    assert first["status"] == "queued"
+
+    r = upload()  # exact same bytes as the default `upload()` fixture call
+    assert r.status_code == 409
+    assert "already uploaded" in r.json()["detail"]
+
+
+def test_identical_files_in_the_same_batch_are_rejected(api):
+    same = ("files", ("a.pdf", PDF, "application/pdf"))
+    other_name = ("files", ("b.pdf", PDF, "application/pdf"))
+    r = api.http.post("/invoices", files=[same, other_name])
+    assert r.status_code == 409
+    assert "identical to" in r.json()["detail"]
+    assert api.http.get("/invoices").json() == []  # neither one was created
 
 
 def test_users_cannot_see_each_others_invoices(api, queue, upload):

@@ -24,6 +24,10 @@ class Invoice(Base):
     storage_path: Mapped[str] = mapped_column(String(512))
     content_type: Mapped[str] = mapped_column(String(100))
     status: Mapped[str] = mapped_column(String(20), default="queued", index=True)
+    # SHA-256 of the raw file bytes. Lets us reject the exact same file re-uploaded before
+    # spending an extraction call on it — distinct from is_duplicate, which compares the
+    # extracted vendor/number/total and can only run after extraction.
+    file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     vendor: Mapped[str | None] = mapped_column(String(255), nullable=True)
     invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -44,7 +48,10 @@ class Invoice(Base):
         back_populates="invoice", cascade="all, delete-orphan", order_by="InvoiceItem.position"
     )
 
-    __table_args__ = (Index("ix_invoices_dupe", "user_id", "vendor", "invoice_number"),)
+    __table_args__ = (
+        Index("ix_invoices_dupe", "user_id", "vendor", "invoice_number"),
+        Index("ix_invoices_file_hash", "user_id", "file_hash"),
+    )
 
 
 class InvoiceItem(Base):
