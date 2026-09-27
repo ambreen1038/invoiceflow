@@ -169,11 +169,18 @@ def summarize(results: list[dict]):
 
     if non_invoice_cases:
         for r in non_invoice_cases:
+            got = r.get("got", {})
+            model_flagged_it = got.get("is_invoice") is False
+            other_fields_null = all(
+                v is None for k, v in got.items() if k not in ("is_invoice", "items")
+            )
             outcome = (
                 "extraction error (rejected outright)" if r["status"] != "ok" else
-                ("all fields null + flagged" if r.get("issues_flagged") and
-                 all(v is None for v in r.get("got", {}).values() if not isinstance(v, list))
-                 else "did NOT clearly reject — check results.json")
+                "correctly identified as not an invoice (is_invoice: false, single clear issue)"
+                if model_flagged_it and r.get("issues_flagged") else
+                "all fields null + flagged (older behaviour, model didn't set is_invoice)"
+                if other_fields_null and r.get("issues_flagged") else
+                "did NOT clearly reject — check results.json"
             )
             print(f"Non-invoice control ({r['name']}): {outcome}")
 

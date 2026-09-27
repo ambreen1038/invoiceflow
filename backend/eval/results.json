@@ -29,17 +29,18 @@
       "items": [
         {
           "description": "Ceiling fan, 56 inch",
-          "quantity": "2.0",
+          "quantity": "2",
           "unit_price": "6500.0",
           "amount": "13000.0"
         },
         {
           "description": "LED bulb pack of 6",
-          "quantity": "1.0",
+          "quantity": "1",
           "unit_price": "3200.0",
           "amount": "3200.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -88,7 +89,8 @@
           "unit_price": "420.0",
           "amount": "10500.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -131,7 +133,8 @@
           "unit_price": "145.0",
           "amount": "290.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -174,7 +177,8 @@
           "unit_price": "1800.0",
           "amount": "1800.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -259,7 +263,8 @@
           "unit_price": "75.0",
           "amount": "450.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -308,7 +313,8 @@
           "unit_price": "420.0",
           "amount": "10500.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -351,7 +357,8 @@
           "unit_price": "40.0",
           "amount": "200.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -394,7 +401,8 @@
           "unit_price": "12000.0",
           "amount": "12000.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -424,7 +432,8 @@
       "subtotal": null,
       "tax": null,
       "total": null,
-      "items": []
+      "items": [],
+      "is_invoice": false
     }
   },
   {
@@ -473,7 +482,8 @@
           "unit_price": "120.0",
           "amount": "360.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -516,7 +526,8 @@
           "unit_price": "8200.0",
           "amount": "8200.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   },
   {
@@ -553,7 +564,8 @@
           "unit_price": "25000.0",
           "amount": "25000.0"
         }
-      ]
+      ],
+      "is_invoice": true
     }
   }
 ]

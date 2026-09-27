@@ -9,13 +9,18 @@ from app.core.config import Settings
 
 PROMPT = """You extract data from an invoice or receipt image. Reply with ONE JSON object only,
 no prose, using exactly these keys:
-{"vendor": string|null, "invoice_number": string|null, "invoice_date": "YYYY-MM-DD"|null,
+{"is_invoice": boolean,
+ "vendor": string|null, "invoice_number": string|null, "invoice_date": "YYYY-MM-DD"|null,
  "currency": ISO code like "PKR" or "USD"|null, "subtotal": number|null, "tax": number|null,
  "total": number|null,
  "items": [{"description": string, "quantity": number|null, "unit_price": number|null,
             "amount": number|null}]}
-Rules: numbers have no currency symbols or thousands separators. If a value is not clearly
-visible use null. Never guess or calculate values that are not printed on the document."""
+Rules: "is_invoice" is false if the document is clearly not an invoice or receipt (e.g. a
+photo, a letter, notes, an unrelated form) — in that case every other field should be null and
+"items" empty; do not guess invoice-shaped data for a document that isn't one. Otherwise
+"is_invoice" is true. Numbers have no currency symbols or thousands separators. If a value is
+not clearly visible use null. Never guess or calculate values that are not printed on the
+document."""
 
 
 class ExtractionError(Exception):

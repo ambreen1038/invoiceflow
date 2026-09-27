@@ -49,6 +49,25 @@ def test_non_positive_total():
     assert ("total", "non_positive") in codes({**GOOD, "subtotal": None, "items": [], "total": 0})
 
 
+def test_not_invoice_short_circuits_to_one_clear_issue():
+    result = validate(ExtractedInvoice.model_validate({"is_invoice": False}))
+    assert [(i["field"], i["code"]) for i in result] == [("_document", "not_invoice")]
+
+
+def test_not_invoice_true_by_default_unaffected():
+    # A model result with no "is_invoice" key at all (or an old/fake extractor) must behave
+    # exactly as before this field existed.
+    assert codes(GOOD) == set()
+
+
+def test_not_invoice_wins_even_if_other_fields_are_populated():
+    # If is_invoice is false, don't also report "missing field" noise even when some fields
+    # happen to be filled in (e.g. a hallucinated partial match).
+    bad = {**GOOD, "is_invoice": False}
+    result = validate(ExtractedInvoice.model_validate(bad))
+    assert len(result) == 1 and result[0]["code"] == "not_invoice"
+
+
 def test_to_decimal_handles_messy_numbers():
     assert to_decimal("Rs. 1,234.50") == Decimal("1234.50")
     assert to_decimal("1.234,50") == Decimal("1234.50")

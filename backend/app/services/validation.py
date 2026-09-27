@@ -57,6 +57,9 @@ class ExtractedInvoice(BaseModel):
     tax: Decimal | None = None
     total: Decimal | None = None
     items: list[LineItem] = Field(default_factory=list)
+    # Defaults True: absent on a human's review-save payload, and on any extractor result
+    # that predates this field, both of which should behave exactly as before.
+    is_invoice: bool = True
 
     @field_validator("subtotal", "tax", "total", mode="before")
     @classmethod
@@ -92,6 +95,13 @@ def validate(inv: ExtractedInvoice) -> list[dict]:
 
     def add(field: str, code: str, message: str):
         issues.append({"field": field, "code": code, "message": message})
+
+    if not inv.is_invoice:
+        # One clear message beats four confusing "X is missing" flags on a blank form.
+        add("_document", "not_invoice",
+            "This doesn't look like an invoice or receipt. Delete it, or edit the fields in "
+            "by hand below if it actually is one.")
+        return issues
 
     for field, label in (("vendor", "Vendor"), ("invoice_date", "Date"), ("total", "Total")):
         if getattr(inv, field) is None:
