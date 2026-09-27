@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError, type Invoice, type Issue, type Item } from "@/lib/api";
+import { useInvoices } from "@/lib/invoices-store";
+import PageLoader from "@/components/PageLoader";
+import { Spinner } from "@/components/icons";
+
+type Action = "save" | "approve" | "retry" | "delete" | null;
 
 type Form = {
   vendor: string;
@@ -68,6 +73,8 @@ export default function Review() {
   const [ack, setAck] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [action, setAction] = useState<Action>(null);
+  const { reload } = useInvoices(); // keep the sidebar's counts and the dashboard table in sync
 
   function accept(next: Invoice) {
     setInv(next);
@@ -109,10 +116,12 @@ export default function Review() {
   async function save(approve: boolean) {
     if (!form) return;
     setBusy(true);
+    setAction(approve ? "approve" : "save");
     setError(null);
     try {
       const next = await api.save(id, toPayload(form, approve, ack));
       accept(next);
+      reload();
       if (approve) router.push("/dashboard");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : (e as Error).message);
@@ -120,28 +129,41 @@ export default function Review() {
       api.get(id).then((i) => setInv(i)).catch(() => {});
     } finally {
       setBusy(false);
+      setAction(null);
     }
   }
 
   async function retry() {
     setBusy(true);
+    setAction("retry");
     try {
       accept(await api.retry(id));
+      reload();
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
+      setAction(null);
     }
   }
 
   async function remove() {
     if (!confirm("Delete this invoice and its file?")) return;
-    await api.remove(id);
-    router.push("/dashboard");
+    setBusy(true);
+    setAction("delete");
+    try {
+      await api.remove(id);
+      reload();
+      router.push("/dashboard");
+    } catch (e) {
+      setError((e as Error).message);
+      setBusy(false);
+      setAction(null);
+    }
   }
 
   if (!inv || !form) {
-    return <main>{error ? <p className="error">{error}</p> : <p className="muted">Loading…</p>}</main>;
+    return error ? <main><p className="error">{error}</p></main> : <PageLoader label="Loading invoice…" fullScreen />;
   }
 
   const set = (k: keyof Omit<Form, "items">) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -177,7 +199,7 @@ export default function Review() {
               <img className="preview" src={fileUrl} alt="Uploaded invoice" />
             )
           ) : (
-            <p className="muted">Loading preview…</p>
+            <PageLoader label="Loading preview…" />
           )}
         </div>
 
@@ -186,7 +208,10 @@ export default function Review() {
           {inv.status === "failed" && (
             <div>
               <p className="error">Extraction failed: {inv.error}</p>
-              <button onClick={retry} disabled={busy}>Retry extraction</button>
+              <button className="btn-with-spinner" onClick={retry} disabled={busy}>
+                {action === "retry" && <Spinner size={14} />}
+                Retry extraction
+              </button>
               <p className="muted">Or fill the fields in by hand below.</p>
             </div>
           )}
@@ -228,11 +253,22 @@ export default function Review() {
           {error && <p className="error">{error}</p>}
 
           <div className="row" style={{ marginTop: 16 }}>
-            <button onClick={() => save(false)} disabled={busy || pending}>Save &amp; re-check</button>
-            <button className="primary" onClick={() => save(true)} disabled={busy || pending || (inv.issues.length > 0 && !ack)}>
-              Approve
+            <button className="btn-with-spinner" onClick={() => save(false)} disabled={busy || pending}>
+              {action === "save" && <Spinner size={14} />}
+              {action === "save" ? "Checking…" : "Save & re-check"}
             </button>
-            <button className="danger" onClick={remove} disabled={busy}>Delete</button>
+            <button
+              className="primary btn-with-spinner"
+              onClick={() => save(true)}
+              disabled={busy || pending || (inv.issues.length > 0 && !ack)}
+            >
+              {action === "approve" && <Spinner size={14} />}
+              {action === "approve" ? "Approving…" : "Approve"}
+            </button>
+            <button className="danger btn-with-spinner" onClick={remove} disabled={busy}>
+              {action === "delete" && <Spinner size={14} />}
+              Delete
+            </button>
           </div>
         </div>
       </div>
