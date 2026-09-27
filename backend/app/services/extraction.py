@@ -88,6 +88,44 @@ class GroqExtractor:
         return parse_json_object(r.json()["choices"][0]["message"]["content"])
 
 
+class GeminiExtractor:
+    """Vision extraction via Google Gemini. Chosen over Groq because, as of Sep 2026, this
+    project's Groq account offers no vision-capable model at all (verified by calling Groq's
+    own /models endpoint) — text models only. Gemini's free tier (aistudio.google.com) does
+    support image input."""
+
+    def __init__(self, api_key: str, model: str):
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY is required when EXTRACTOR=gemini")
+        self.api_key, self.model = api_key, model
+
+    def extract(self, data: bytes, content_type: str) -> dict:
+        parts: list[dict] = [{"text": PROMPT}]
+        for img, mime in to_images(data, content_type):
+            b64 = base64.b64encode(img).decode()
+            parts.append({"inline_data": {"mime_type": mime, "data": b64}})
+        r = httpx.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
+            params={"key": self.api_key},
+            json={
+                "contents": [{"parts": parts}],
+                "generationConfig": {"temperature": 0, "maxOutputTokens": 2000},
+            },
+            timeout=90,
+        )
+        if r.status_code == 429:
+            raise ExtractionError("rate limited by Gemini (will retry)")
+        if r.status_code >= 400:
+            raise ExtractionError(f"Gemini error {r.status_code}: {r.text[:300]}")
+        body = r.json()
+        candidates = body.get("candidates") or []
+        if not candidates:
+            reason = body.get("promptFeedback", {}).get("blockReason", "no candidates returned")
+            raise ExtractionError(f"Gemini returned nothing ({reason})")
+        text = "".join(p.get("text", "") for p in candidates[0]["content"]["parts"])
+        return parse_json_object(text)
+
+
 class FakeExtractor:
     """Deterministic extractor for tests and offline demos. Not real OCR."""
 
@@ -113,4 +151,6 @@ class FakeExtractor:
 def build_extractor(s: Settings) -> Extractor:
     if s.extractor == "fake":
         return FakeExtractor()
-    return GroqExtractor(s.groq_api_key, s.groq_model)
+    if s.extractor == "groq":
+        return GroqExtractor(s.groq_api_key, s.groq_model)
+    return GeminiExtractor(s.gemini_api_key, s.gemini_model)

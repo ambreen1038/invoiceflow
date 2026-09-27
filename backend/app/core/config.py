@@ -16,9 +16,11 @@ class Settings(BaseSettings):
     storage_backend: str = "local"  # local | supabase
     local_storage_dir: str = "./storage"
 
-    extractor: str = "groq"  # groq | fake
+    extractor: str = "gemini"  # gemini | groq | fake
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-flash-lite-latest"
     groq_api_key: str = ""
-    groq_model: str = "meta-llama/llama-4-scout-17b-16e-instruct"
+    groq_model: str = ""  # set to a current vision-capable model id if you switch back to Groq
 
     queue_backend: str = "postgres"  # postgres | celery
     redis_url: str = "redis://localhost:6379/0"

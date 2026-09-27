@@ -3,8 +3,9 @@
 Upload invoices (photos or PDFs). InvoiceFlow extracts the fields with an LLM, **checks that the
 numbers add up**, and shows a human only what looks wrong. Approved invoices export to CSV.
 
-> Status: work in progress. The backend, queue, tests and review UI are implemented; the accuracy
-> table below is empty until I have run the evaluation set (see [docs/EVALUATION.md](docs/EVALUATION.md)).
+> Status: work in progress. The backend, queue, tests and review UI are implemented and a first
+> evaluation pass is done — see [docs/EVALUATION.md](docs/EVALUATION.md) for the numbers and,
+> importantly, their limitations (12 synthetic test cases so far, not real invoices yet).
 
 ## Why it exists
 
@@ -42,7 +43,7 @@ server re-runs every check on each save, so the UI cannot be used to skip them.
 | Frontend | Next.js (App Router, TypeScript) |
 | API | FastAPI, SQLAlchemy 2, Alembic, Pydantic v2 |
 | Database / auth / files | Supabase (Postgres, Auth JWTs, private Storage bucket) |
-| Extraction | Groq vision model (configurable) via `httpx`; PDFs rendered with PyMuPDF |
+| Extraction | Google Gemini vision model (configurable) via `httpx`; PDFs rendered with PyMuPDF |
 | Queue | Postgres `jobs` table by default; Celery + Redis as an optional drop-in |
 | Tests / CI | pytest (SQLite and real Postgres), ruff, GitHub Actions |
 
@@ -64,7 +65,8 @@ experimental until that is added.
 
 ## Running locally
 
-Prerequisites: Python 3.12, Node 22, a Supabase project, a Groq API key.
+Prerequisites: Python 3.12, Node 22, a Supabase project, a free Gemini API key
+(from [aistudio.google.com](https://aistudio.google.com/apikey)).
 
 1. Copy `.env.example` to `.env` and fill in your own values. **Never commit `.env`.** The
    service-role key is server-only.
@@ -100,11 +102,14 @@ cd backend && pytest
 
 - Extraction quality depends on the model and the scan. That is why every result is reviewable.
 - Only the first two pages of a PDF are read.
-- The free Groq tier is rate limited; rate-limit errors are retried with backoff.
+- Gemini's free tier has a per-model daily request cap (see `docs/EVALUATION.md` for what that
+  cap actually is, and why the default model was chosen around it); errors are retried with backoff.
 
 ## Roadmap
 
-- [ ] Run the evaluation set and publish field-level accuracy
+- [x] Run a first evaluation pass and publish field-level accuracy (synthetic set — see EVALUATION.md)
+- [ ] Add a v2 evaluation batch of real, redacted invoices
+- [ ] A dedicated "this doesn't look like an invoice" flow for non-invoice uploads
 - [ ] Automated test for the Celery backend
 - [ ] Excel export
 - [ ] Deploy (Vercel + Render + Supabase, all free tiers)
