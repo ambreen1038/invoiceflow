@@ -16,6 +16,17 @@ def create_app(queue=None, storage=None) -> FastAPI:
     """Dependencies can be injected (tests do); otherwise they are built from settings."""
     settings = get_settings()
 
+    if settings.sentry_dsn:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            environment=settings.sentry_environment,
+            traces_sample_rate=settings.sentry_traces_sample_rate,
+            # Request/user bodies can contain invoice data; don't attach them to error reports.
+            send_default_pii=False,
+        )
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.storage = storage or build_storage(settings)

@@ -32,6 +32,15 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     max_upload_mb: int = 10
 
+    # Error monitoring. Left blank, this is a true no-op: sentry_sdk.init() is simply never
+    # called, so there's no dependency on having an account to run the app locally.
+    sentry_dsn: str = ""
+    sentry_environment: str = "development"
+    # Fraction of requests to trace for performance data, on top of error reporting (which is
+    # always on when sentry_dsn is set). Kept at 0 by default — this app doesn't need request
+    # tracing, and Sentry's free tier has a much smaller monthly quota for traces than errors.
+    sentry_traces_sample_rate: float = 0.0
+
     @property
     def sqlalchemy_url(self) -> str:
         url = self.database_url

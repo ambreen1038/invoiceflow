@@ -1,3 +1,4 @@
+import io
 import uuid
 
 from fastapi.testclient import TestClient
@@ -50,6 +51,21 @@ def test_upload_process_review_approve_export(api, queue, upload):
 
     csv_text = api.http.get("/invoices/export.csv").text
     assert "Demo Traders,INV-001,2026-01-15,PKR,1000.00,170.00,1170.00" in csv_text
+
+    xlsx_resp = api.http.get("/invoices/export.xlsx")
+    assert xlsx_resp.headers["content-type"] == (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(xlsx_resp.content))
+    ws = wb.active
+    assert [c.value for c in ws[1]] == [
+        "vendor", "invoice_number", "date", "currency", "subtotal", "tax", "total",
+    ]
+    assert [c.value for c in ws[2]] == [
+        "Demo Traders", "INV-001", "2026-01-15", "PKR", 1000.0, 170.0, 1170.0,
+    ]
 
 
 def test_bad_math_blocks_approval_unless_fixed_or_acknowledged(api, queue, upload, storage):
@@ -156,6 +172,13 @@ def test_csv_export_neutralises_formula_injection(api, queue, upload, storage):
     api.http.put(f"/invoices/{inv['id']}",
                  json={**editable(got), "approve": True, "acknowledge_issues": True})
     assert "'=HYPERLINK" in api.http.get("/invoices/export.csv").text
+
+    from openpyxl import load_workbook
+
+    wb = load_workbook(io.BytesIO(api.http.get("/invoices/export.xlsx").content))
+    vendor_cell = wb.active["A2"]
+    assert vendor_cell.value == "'=HYPERLINK(\"http://x\")"
+    assert vendor_cell.number_format == "@"  # forced to text, so Excel won't evaluate it either
 
 
 def test_delete_removes_invoice_and_file(api, upload):

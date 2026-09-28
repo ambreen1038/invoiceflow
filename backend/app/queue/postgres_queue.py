@@ -9,6 +9,7 @@ import threading
 import uuid
 from datetime import timedelta
 
+import sentry_sdk
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
@@ -73,7 +74,7 @@ class PostgresQueue:
             self.process(invoice_id)
         except Exception as exc:  # noqa: BLE001 - any failure is retried or recorded
             log.warning("job %s attempt %s failed: %s", job_id, attempts, exc)
-            self._on_failure(job_id, invoice_id, attempts, str(exc))
+            self._on_failure(job_id, invoice_id, attempts, str(exc), exc)
         else:
             with self.session_factory() as s:
                 s.execute(
@@ -82,7 +83,9 @@ class PostgresQueue:
                 s.commit()
         return True
 
-    def _on_failure(self, job_id: int, invoice_id: uuid.UUID, attempts: int, error: str) -> None:
+    def _on_failure(
+        self, job_id: int, invoice_id: uuid.UUID, attempts: int, error: str, exc: Exception
+    ) -> None:
         final = attempts >= self.max_attempts
         with self.session_factory() as s:
             values = {"last_error": error[:1000], "locked_at": None}
@@ -96,6 +99,9 @@ class PostgresQueue:
             s.execute(update(Job).where(Job.id == job_id).values(**values))
             s.commit()
         if final:
+            # Only report once retries are exhausted — a transient blip that succeeds on
+            # retry isn't worth an alert, and Sentry's free tier meters errors by volume.
+            sentry_sdk.capture_exception(exc)
             mark_failed(invoice_id, error, self.session_factory)
 
     # -- in-process worker thread ---------------------------------------------

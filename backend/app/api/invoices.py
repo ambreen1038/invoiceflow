@@ -124,9 +124,21 @@ def list_invoices(
     return db.scalars(q.limit(200)).all()
 
 
-def _csv_cell(value) -> str:
+EXPORT_HEADERS = ["vendor", "invoice_number", "date", "currency", "subtotal", "tax", "total"]
+
+
+def _approved_invoices(db: Session, user_id: uuid.UUID) -> list[Invoice]:
+    return db.scalars(
+        select(Invoice)
+        .where(Invoice.user_id == user_id, Invoice.status == "approved")
+        .order_by(Invoice.invoice_date, Invoice.created_at)
+    ).all()
+
+
+def _guard_formula(value) -> str:
     text = "" if value is None else str(value)
-    # Spreadsheet formula injection: a vendor named "=HYPERLINK(...)" must stay text.
+    # Spreadsheet formula injection: a vendor named "=HYPERLINK(...)" must stay text. Numbers
+    # are never passed through this — they may legitimately be negative.
     return "'" + text if text[:1] in ("=", "+", "-", "@", "\t", "\r") else text
 
 
@@ -135,22 +147,58 @@ def export_csv(
     db: Session = Depends(get_db),
     user_id: uuid.UUID = Depends(current_user_id),
 ):
-    rows = db.scalars(
-        select(Invoice)
-        .where(Invoice.user_id == user_id, Invoice.status == "approved")
-        .order_by(Invoice.invoice_date, Invoice.created_at)
-    ).all()
     out = io.StringIO()
     w = csv.writer(out)
-    w.writerow(["vendor", "invoice_number", "date", "currency", "subtotal", "tax", "total"])
-    for inv in rows:
+    w.writerow(EXPORT_HEADERS)
+    for inv in _approved_invoices(db, user_id):
         w.writerow([
-            _csv_cell(inv.vendor), _csv_cell(inv.invoice_number), inv.invoice_date,
-            _csv_cell(inv.currency), inv.subtotal, inv.tax, inv.total,
-        ])  # only free-text columns need the guard; numbers may legitimately be negative
+            _guard_formula(inv.vendor), _guard_formula(inv.invoice_number), inv.invoice_date,
+            _guard_formula(inv.currency), inv.subtotal, inv.tax, inv.total,
+        ])
     return Response(
         out.getvalue(), media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="invoices.csv"'},
+    )
+
+
+@router.get("/export.xlsx")
+def export_xlsx(
+    db: Session = Depends(get_db),
+    user_id: uuid.UUID = Depends(current_user_id),
+):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Approved invoices"
+    ws.append(EXPORT_HEADERS)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    text_cols = {1, 2, 4}  # vendor, invoice_number, currency — force-text, same guard as CSV
+    for inv in _approved_invoices(db, user_id):
+        row = [
+            _guard_formula(inv.vendor), _guard_formula(inv.invoice_number),
+            inv.invoice_date.isoformat() if inv.invoice_date else None,
+            _guard_formula(inv.currency),
+            float(inv.subtotal) if inv.subtotal is not None else None,
+            float(inv.tax) if inv.tax is not None else None,
+            float(inv.total) if inv.total is not None else None,
+        ]
+        ws.append(row)
+        for col in text_cols:
+            ws.cell(row=ws.max_row, column=col).number_format = "@"
+
+    for col, width in zip("ABCDEFG", (24, 16, 12, 10, 12, 12, 12), strict=True):
+        ws.column_dimensions[col].width = width
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return Response(
+        buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="invoices.xlsx"'},
     )
 
 

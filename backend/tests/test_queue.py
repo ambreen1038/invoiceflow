@@ -1,6 +1,7 @@
 import uuid
 from datetime import timedelta
 
+import app.queue.postgres_queue as pq
 from app.db.session import utcnow
 from app.models import Invoice, Job
 from app.queue.postgres_queue import PostgresQueue, backoff_seconds
@@ -58,6 +59,25 @@ def test_failed_job_is_retried_with_backoff_then_fails(session_factory):
         inv = s.get(Invoice, inv_id)
         assert inv.status == "failed" and "llm exploded" in inv.error
     assert q.run_once() is False
+
+
+def test_sentry_only_sees_the_final_failure_not_each_retry(session_factory, monkeypatch):
+    reported = []
+    monkeypatch.setattr(pq.sentry_sdk, "capture_exception", reported.append)
+    make_invoice(session_factory)
+
+    def boom(_):
+        raise RuntimeError("llm exploded")
+
+    q = make_queue(session_factory, boom, max_attempts=2)
+    q.run_once()  # attempt 1 -> rescheduled, not yet final
+    assert reported == []
+    with session_factory() as s:
+        s.query(Job).update({"run_at": utcnow() - timedelta(seconds=1)})
+        s.commit()
+    q.run_once()  # attempt 2 -> final
+    assert len(reported) == 1
+    assert str(reported[0]) == "llm exploded"
 
 
 def test_job_scheduled_in_future_is_not_claimed(session_factory):

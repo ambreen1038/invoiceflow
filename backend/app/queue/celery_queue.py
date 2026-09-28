@@ -5,6 +5,7 @@ Requires: pip install -r requirements-celery.txt   and   QUEUE_BACKEND=celery
 """
 import uuid
 
+import sentry_sdk
 from sqlalchemy import event
 from sqlalchemy.orm import Session
 
@@ -19,6 +20,18 @@ except ImportError as exc:  # pragma: no cover
     raise RuntimeError("Celery backend needs: pip install -r requirements-celery.txt") from exc
 
 settings = get_settings()
+
+# A `celery worker` process is launched standalone (see the docstring above) and never runs
+# app.main.create_app(), so it needs its own Sentry init to report failures at all — the
+# FastAPI process initialising Sentry doesn't cover this one.
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.sentry_environment,
+        traces_sample_rate=settings.sentry_traces_sample_rate,
+        send_default_pii=False,
+    )
+
 celery_app = Celery("invoiceflow", broker=settings.redis_url, backend=settings.redis_url)
 celery_app.conf.task_acks_late = True  # a crashed worker's task is redelivered
 
@@ -31,6 +44,8 @@ def process_invoice_task(self, invoice_id: str) -> None:
         process_invoice(uuid.UUID(invoice_id), build_storage(s), build_extractor(s))
     except Exception as exc:  # noqa: BLE001
         if self.request.retries >= self.max_retries:
+            # Retries exhausted — same policy as postgres_queue.py's _on_failure.
+            sentry_sdk.capture_exception(exc)
             mark_failed(uuid.UUID(invoice_id), str(exc))
             raise
         raise self.retry(exc=exc, countdown=2 ** (self.request.retries + 1) * 5) from exc
