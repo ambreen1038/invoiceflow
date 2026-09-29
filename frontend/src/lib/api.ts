@@ -125,4 +125,5 @@ export const api = {
   },
   file: async (id: string): Promise<Blob> => (await request(`/invoices/${id}/file`)).blob(),
   exportCsv: async (): Promise<Blob> => (await request("/invoices/export.csv")).blob(),
+  exportXlsx: async (): Promise<Blob> => (await request("/invoices/export.xlsx")).blob(),
 };

@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useInvoices } from "@/lib/invoices-store";
+import Logo from "@/components/Logo";
 import {
   CheckCircleIcon,
   ClockIcon,
+  CloseIcon,
   FlagIcon,
   InboxIcon,
   UploadIcon,
@@ -20,7 +22,7 @@ const NAV = [
   { key: "failed", label: "Failed", status: "failed", icon: XCircleIcon },
 ] as const;
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeStatus = searchParams.get("status");
@@ -28,36 +30,50 @@ export default function Sidebar() {
   const onDashboard = pathname === "/dashboard";
 
   return (
-    <aside className="sidebar">
-      <Link href="/dashboard" className="sidebar-brand">
-        <span className="sidebar-logo">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M6 3h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="white" strokeWidth="1.6" />
-            <path d="M9 12.5h6M9 16h4" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        </span>
-        InvoiceFlow
-      </Link>
+    <>
+      {/* Only rendered (and only visible, via CSS) on narrow screens, so it's harmless on desktop. */}
+      {open && <div className="sidebar-backdrop" onClick={onClose} aria-hidden="true" />}
 
-      <button className="sidebar-upload" onClick={openFilePicker} disabled={uploading}>
-        <UploadIcon size={16} />
-        {uploading ? "Uploading…" : "Upload invoices"}
-      </button>
+      <aside className={`sidebar${open ? " mobile-open" : ""}`}>
+        <div className="sidebar-top-row">
+          <Link href="/dashboard" className="sidebar-brand" onClick={onClose}>
+            <span className="sidebar-logo">
+              <Logo size={17} />
+            </span>
+            InvoiceFlow
+          </Link>
+          <button className="sidebar-close" onClick={onClose} aria-label="Close menu">
+            <CloseIcon size={16} />
+          </button>
+        </div>
 
-      <nav className="sidebar-nav" aria-label="Invoice filters">
-        <span className="sidebar-nav-label">Invoices</span>
-        {NAV.map(({ key, label, status, icon: Icon }) => {
-          const isActive = onDashboard && (status === null ? !activeStatus : activeStatus === status);
-          const href = status === null ? "/dashboard" : `/dashboard?status=${status}`;
-          return (
-            <Link key={key} href={href} className={`sidebar-link${isActive ? " active" : ""}`}>
-              <Icon size={17} />
-              <span>{label}</span>
-              {counts[key] > 0 && <span className="sidebar-count">{counts[key]}</span>}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+        <button
+          className="sidebar-upload"
+          onClick={() => {
+            openFilePicker();
+            onClose();
+          }}
+          disabled={uploading}
+        >
+          <UploadIcon size={16} />
+          {uploading ? "Uploading…" : "Upload invoices"}
+        </button>
+
+        <nav className="sidebar-nav" aria-label="Invoice filters">
+          <span className="sidebar-nav-label">Invoices</span>
+          {NAV.map(({ key, label, status, icon: Icon }) => {
+            const isActive = onDashboard && (status === null ? !activeStatus : activeStatus === status);
+            const href = status === null ? "/dashboard" : `/dashboard?status=${status}`;
+            return (
+              <Link key={key} href={href} className={`sidebar-link${isActive ? " active" : ""}`} onClick={onClose}>
+                <Icon size={17} />
+                <span>{label}</span>
+                {counts[key] > 0 && <span className="sidebar-count">{counts[key]}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
+    </>
   );
 }

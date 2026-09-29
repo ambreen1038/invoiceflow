@@ -2,6 +2,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { api, ApiError, type Invoice } from "@/lib/api";
+import { notifyInvoiceFinished } from "@/lib/notifications";
+
+const FINISHED_STATUSES = new Set(["needs_review", "approved", "failed"]);
 
 export type UploadFileState = {
   id: string;
@@ -21,6 +24,7 @@ type Ctx = {
   counts: Record<"all" | "in_progress" | "needs_review" | "approved" | "failed", number>;
   reload: () => Promise<void>;
   upload: (files: FileList | File[]) => Promise<void>;
+  removeInvoice: (id: string) => Promise<void>;
   openFilePicker: () => void;
   dismissUpload: () => void;
 };
@@ -46,10 +50,24 @@ export function InvoicesProvider({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevStatuses = useRef<Map<string, string>>(new Map());
 
   const reload = useCallback(async () => {
     try {
-      setInvoices(await api.list());
+      const next = await api.list();
+      // Notify only for an invoice that just moved from queued/processing into a finished
+      // state — never on first load (no prior status to compare against) and never for one
+      // that was already finished last time we checked.
+      if (prevStatuses.current.size > 0) {
+        for (const inv of next) {
+          const was = prevStatuses.current.get(inv.id);
+          if (was && !FINISHED_STATUSES.has(was) && FINISHED_STATUSES.has(inv.status)) {
+            notifyInvoiceFinished(inv.filename, inv.status, inv.id);
+          }
+        }
+      }
+      prevStatuses.current = new Map(next.map((i) => [i.id, i.status]));
+      setInvoices(next);
       setError(null);
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) onUnauthorized();
@@ -104,6 +122,14 @@ export function InvoicesProvider({
     [reload, dismissUpload],
   );
 
+  const removeInvoice = useCallback(
+    async (id: string) => {
+      await api.remove(id);
+      await reload();
+    },
+    [reload],
+  );
+
   const counts = {
     all: invoices.length,
     in_progress: invoices.filter((i) => i.status === "queued" || i.status === "processing").length,
@@ -125,6 +151,7 @@ export function InvoicesProvider({
         counts,
         reload,
         upload,
+        removeInvoice,
         openFilePicker: () => inputRef.current?.click(),
         dismissUpload,
       }}

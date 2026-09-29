@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { api, ApiError, type Invoice, type Issue, type Item } from "@/lib/api";
 import { useInvoices } from "@/lib/invoices-store";
 import PageLoader from "@/components/PageLoader";
-import { Spinner } from "@/components/icons";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { PlusIcon, Spinner, TrashIcon } from "@/components/icons";
 
 type Action = "save" | "approve" | "retry" | "delete" | null;
 
@@ -70,6 +71,7 @@ export default function Review() {
   const [form, setForm] = useState<Form | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [fileType, setFileType] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [ack, setAck] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -148,7 +150,6 @@ export default function Review() {
   }
 
   async function remove() {
-    if (!confirm("Delete this invoice and its file?")) return;
     setBusy(true);
     setAction("delete");
     try {
@@ -157,6 +158,7 @@ export default function Review() {
       router.push("/dashboard");
     } catch (e) {
       setError((e as Error).message);
+      setConfirmingDelete(false);
       setBusy(false);
       setAction(null);
     }
@@ -166,10 +168,20 @@ export default function Review() {
     return error ? <main><p className="error">{error}</p></main> : <PageLoader label="Loading invoice…" fullScreen />;
   }
 
+  const notInvoice = inv.issues.some((x) => x.code === "not_invoice");
+  const otherIssues = inv.issues.filter((x) => x.code !== "not_invoice"); // "not_invoice" gets its own banner above
+
   const set = (k: keyof Omit<Form, "items">) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [k]: e.target.value });
   const setItem = (idx: number, k: keyof Form["items"][number], v: string) =>
     setForm({ ...form, items: form.items.map((it, n) => (n === idx ? { ...it, [k]: v } : it)) });
+  const addItem = () =>
+    setForm({
+      ...form,
+      items: [...form.items, { description: "", quantity: "", unit_price: "", amount: "" }],
+    });
+  const removeItem = (idx: number) =>
+    setForm({ ...form, items: form.items.filter((_, n) => n !== idx) });
 
   const pending = inv.status === "queued" || inv.status === "processing";
   const field = (k: keyof Omit<Form, "items">, title: string, type = "text") => (
@@ -216,6 +228,15 @@ export default function Review() {
             </div>
           )}
 
+          {notInvoice && (
+            <div className="alert alert-error" style={{ marginTop: 0, marginBottom: 16 }}>
+              <span>
+                This doesn&apos;t look like an invoice or receipt. If that&apos;s right, delete it below.
+                If it actually is one, fill in the fields by hand and approve.
+              </span>
+            </div>
+          )}
+
           <div className="grid">
             {field("vendor", "Vendor")}
             {field("invoice_number", "Invoice number")}
@@ -229,20 +250,36 @@ export default function Review() {
           <h3>Line items</h3>
           {form.items.length === 0 && <p className="muted">No line items were read.</p>}
           {form.items.map((it, n) => (
-            <div key={n} className="grid" style={{ marginBottom: 8 }}>
+            <div key={n} className="item-row">
               <input aria-label={`Item ${n + 1} description`} placeholder="Description" value={it.description} onChange={(e) => setItem(n, "description", e.target.value)} disabled={pending} />
               <input aria-label={`Item ${n + 1} quantity`} placeholder="Qty" type="number" step="0.001" value={it.quantity} onChange={(e) => setItem(n, "quantity", e.target.value)} disabled={pending} />
               <input aria-label={`Item ${n + 1} unit price`} placeholder="Unit price" type="number" step="0.01" value={it.unit_price} onChange={(e) => setItem(n, "unit_price", e.target.value)} disabled={pending} />
               <input aria-label={`Item ${n + 1} amount`} placeholder="Amount" type="number" step="0.01" className={flagged(`items.${n}.amount`)} value={it.amount} onChange={(e) => setItem(n, "amount", e.target.value)} disabled={pending} />
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label={`Remove item ${n + 1}`}
+                onClick={() => removeItem(n)}
+                disabled={pending}
+              >
+                <TrashIcon size={15} />
+              </button>
             </div>
           ))}
+          <button type="button" className="add-line-btn" onClick={addItem} disabled={pending}>
+            <PlusIcon size={14} /> Add line
+          </button>
 
           {inv.issues.length > 0 && (
             <div style={{ marginTop: 12 }}>
-              <strong>Checks that need your attention</strong>
-              {inv.issues.map((i, n) => (
-                <p key={n} className="issue">• {i.message}</p>
-              ))}
+              {otherIssues.length > 0 && (
+                <>
+                  <strong>Checks that need your attention</strong>
+                  {otherIssues.map((i, n) => (
+                    <p key={n} className="issue">• {i.message}</p>
+                  ))}
+                </>
+              )}
               <label style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
                 <input type="checkbox" style={{ width: "auto" }} checked={ack} onChange={(e) => setAck(e.target.checked)} />
                 I have checked the document and want to approve anyway
@@ -265,13 +302,23 @@ export default function Review() {
               {action === "approve" && <Spinner size={14} />}
               {action === "approve" ? "Approving…" : "Approve"}
             </button>
-            <button className="danger btn-with-spinner" onClick={remove} disabled={busy}>
-              {action === "delete" && <Spinner size={14} />}
+            <button className="danger" onClick={() => setConfirmingDelete(true)} disabled={busy}>
               Delete
             </button>
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="Delete this invoice?"
+        message={`"${inv.filename}" and its uploaded file will be permanently deleted. This can't be undone.`}
+        confirmLabel="Delete"
+        danger
+        busy={busy && action === "delete"}
+        onConfirm={remove}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </main>
   );
 }

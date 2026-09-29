@@ -12,6 +12,7 @@ import PageLoader from "@/components/PageLoader";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -19,11 +20,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       .auth.getSession()
       .then(({ data }) => {
         if (!alive) return;
-        if (!data.session) router.replace("/");
+        if (!data.session) router.replace("/login");
         else setReady(true);
       });
     const { data: sub } = supabase().auth.onAuthStateChange((_event, session) => {
-      if (!session) router.replace("/");
+      if (!session) router.replace("/login");
     });
     return () => {
       alive = false;
@@ -34,11 +35,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!ready) return <PageLoader label="Loading InvoiceFlow…" fullScreen />;
 
   return (
-    <InvoicesProvider onUnauthorized={() => router.replace("/")}>
+    <InvoicesProvider onUnauthorized={() => router.replace("/login")}>
       <div className="app-shell">
-        <Sidebar />
+        <Sidebar open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
         <div className="app-shell-main">
-          <Topbar />
+          <Topbar onOpenMenu={() => setMobileNavOpen(true)} />
           <div className="app-shell-content">{children}</div>
         </div>
       </div>

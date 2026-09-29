@@ -2,18 +2,21 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useInvoices } from "@/lib/invoices-store";
-import type { Invoice } from "@/lib/api";
+import { api, type Invoice, type InvoiceEdit } from "@/lib/api";
 import {
   CheckCircleIcon,
   ClockIcon,
   FlagIcon,
   InboxIcon,
+  SearchIcon,
+  TrashIcon,
   UploadIcon,
   XCircleIcon,
 } from "@/components/icons";
 import PageLoader from "@/components/PageLoader";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const label: Record<Invoice["status"], string> = {
   queued: "Queued",
@@ -37,14 +40,136 @@ function matches(invoice: Invoice, status: string | null): boolean {
   return invoice.status === status;
 }
 
+function matchesQuery(invoice: Invoice, query: string): boolean {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return (
+    (invoice.vendor ?? "").toLowerCase().includes(q) ||
+    (invoice.invoice_number ?? "").toLowerCase().includes(q) ||
+    invoice.filename.toLowerCase().includes(q)
+  );
+}
+
+/** The payload to "approve with no edits" — the invoice's own current values, unchanged. */
+function asEditPayload(inv: Invoice): InvoiceEdit {
+  return {
+    vendor: inv.vendor,
+    invoice_number: inv.invoice_number,
+    invoice_date: inv.invoice_date,
+    currency: inv.currency,
+    subtotal: inv.subtotal,
+    tax: inv.tax,
+    total: inv.total,
+    items: inv.items,
+    approve: true,
+    acknowledge_issues: false,
+  };
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const status = searchParams.get("status");
-  const { invoices, loading, error, uploading, upload, counts } = useInvoices();
+  const { invoices, loading, error, uploading, upload, counts, removeInvoice, reload } = useInvoices();
   const [over, setOver] = useState(false);
+  const [query, setQuery] = useState("");
+  const [toDelete, setToDelete] = useState<Invoice | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const visible = invoices.filter((i) => matches(i, status));
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState<string | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  const visible = useMemo(
+    () => invoices.filter((i) => matches(i, status) && matchesQuery(i, query)),
+    [invoices, status, query],
+  );
+  const selectedVisible = visible.filter((i) => selected.has(i.id));
+  const cleanSelected = selectedVisible.filter((i) => i.status === "needs_review" && i.issues.length === 0);
+  const allVisibleSelected = visible.length > 0 && visible.every((i) => selected.has(i.id));
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllVisible() {
+    setSelected((prev) => {
+      if (allVisibleSelected) {
+        const next = new Set(prev);
+        visible.forEach((i) => next.delete(i.id));
+        return next;
+      }
+      return new Set([...prev, ...visible.map((i) => i.id)]);
+    });
+  }
+
+  function clearSelection() {
+    setSelected(new Set());
+    setBulkMessage(null);
+  }
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await removeInvoice(toDelete.id);
+      setToDelete(null);
+    } catch (e) {
+      setDeleteError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function bulkApprove() {
+    setBulkBusy(true);
+    setBulkMessage(null);
+    let ok = 0;
+    let failed = 0;
+    for (const inv of cleanSelected) {
+      try {
+        await api.save(inv.id, asEditPayload(inv));
+        ok++;
+      } catch {
+        failed++;
+      }
+    }
+    const skipped = selectedVisible.length - cleanSelected.length;
+    await reload();
+    setSelected(new Set());
+    setBulkBusy(false);
+    const parts = [`Approved ${ok}`];
+    if (skipped > 0) parts.push(`skipped ${skipped} with unresolved issues`);
+    if (failed > 0) parts.push(`${failed} failed`);
+    setBulkMessage(parts.join(", ") + ".");
+  }
+
+  async function bulkDelete() {
+    setBulkBusy(true);
+    let ok = 0;
+    let failed = 0;
+    for (const inv of selectedVisible) {
+      try {
+        await api.remove(inv.id);
+        ok++;
+      } catch {
+        failed++;
+      }
+    }
+    await reload();
+    setSelected(new Set());
+    setBulkBusy(false);
+    setBulkDeleteOpen(false);
+    setBulkMessage(failed > 0 ? `Deleted ${ok}, ${failed} failed.` : `Deleted ${ok}.`);
+  }
 
   return (
     <main>
@@ -85,7 +210,7 @@ export default function Dashboard() {
         <input
           type="file"
           multiple
-          hidden
+          className="visually-hidden"
           accept="application/pdf,image/png,image/jpeg,image/webp"
           onChange={(e) => {
             if (e.target.files) upload(e.target.files);
@@ -96,6 +221,34 @@ export default function Dashboard() {
 
       {error && <p className="error">{error}</p>}
 
+      <div className="table-toolbar">
+        <div className="search-box">
+          <SearchIcon size={16} className="search-icon" />
+          <input
+            type="search"
+            placeholder="Search by vendor or invoice number…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+
+        {selected.size > 0 && (
+          <div className="bulk-bar">
+            <span>{selected.size} selected</span>
+            <button onClick={bulkApprove} disabled={bulkBusy || cleanSelected.length === 0}>
+              Approve clean ({cleanSelected.length})
+            </button>
+            <button className="danger" onClick={() => setBulkDeleteOpen(true)} disabled={bulkBusy}>
+              Delete selected
+            </button>
+            <button onClick={clearSelection} disabled={bulkBusy}>
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
+      {bulkMessage && <p className="muted" style={{ margin: "0 0 10px" }}>{bulkMessage}</p>}
+
       <div className="card table-card">
         {loading ? (
           <PageLoader label="Loading your invoices…" />
@@ -104,37 +257,74 @@ export default function Dashboard() {
             <span className="empty-icon">
               <InboxIcon size={26} />
             </span>
-            <p>{status ? "Nothing here yet" : "No invoices yet"}</p>
+            <p>{query ? "No matches" : status ? "Nothing here yet" : "No invoices yet"}</p>
             <p className="muted">
-              {status ? "Invoices will show up here once they match this filter." : "Drop a file above to get started."}
+              {query
+                ? "Try a different vendor or invoice number."
+                : status
+                  ? "Invoices will show up here once they match this filter."
+                  : "Drop a file above to get started."}
             </p>
           </div>
         ) : (
           <table>
             <thead>
               <tr>
+                <th style={{ width: 32 }}>
+                  <input
+                    type="checkbox"
+                    aria-label="Select all visible invoices"
+                    checked={allVisibleSelected}
+                    onChange={toggleAllVisible}
+                  />
+                </th>
                 <th>File</th>
                 <th>Vendor</th>
                 <th>Number</th>
                 <th>Date</th>
                 <th>Total</th>
                 <th>Status</th>
+                <th aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
               {visible.map((i) => (
                 <tr key={i.id} className="click" onClick={() => router.push(`/invoices/${i.id}`)}>
-                  <td>{i.filename}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${i.filename}`}
+                      checked={selected.has(i.id)}
+                      onChange={() => toggleOne(i.id)}
+                    />
+                  </td>
+                  <td className="filename-cell" title={i.filename}>{i.filename}</td>
                   <td>{i.vendor ?? "—"}</td>
                   <td>{i.invoice_number ?? "—"}</td>
                   <td>{i.invoice_date ?? "—"}</td>
                   <td>{i.total != null ? `${i.currency ?? ""} ${i.total.toFixed(2)}`.trim() : "—"}</td>
                   <td>
                     <span className={`badge ${i.status}`}>{label[i.status]}</span>
-                    {i.issues.length > 0 && i.status === "needs_review" && (
-                      <span className="muted"> · {i.issues.length} to check</span>
+                    {i.status === "needs_review" && i.issues.some((x) => x.code === "not_invoice") ? (
+                      <span className="muted"> · doesn&apos;t look like an invoice</span>
+                    ) : (
+                      i.issues.length > 0 &&
+                      i.status === "needs_review" && <span className="muted"> · {i.issues.length} to check</span>
                     )}
                     {i.is_duplicate && <span className="muted"> · duplicate?</span>}
+                  </td>
+                  <td>
+                    <button
+                      className="icon-btn"
+                      aria-label={`Delete ${i.filename}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteError(null);
+                        setToDelete(i);
+                      }}
+                    >
+                      <TrashIcon size={16} />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -142,6 +332,33 @@ export default function Dashboard() {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        open={toDelete !== null}
+        title="Delete this invoice?"
+        message={
+          toDelete
+            ? `"${toDelete.filename}" and its uploaded file will be permanently deleted. This can't be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        danger
+        busy={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setToDelete(null)}
+      />
+      {deleteError && <p className="error">{deleteError}</p>}
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title={`Delete ${selectedVisible.length} invoice${selectedVisible.length === 1 ? "" : "s"}?`}
+        message="Each one and its uploaded file will be permanently deleted. This can't be undone."
+        confirmLabel="Delete all"
+        danger
+        busy={bulkBusy}
+        onConfirm={bulkDelete}
+        onCancel={() => setBulkDeleteOpen(false)}
+      />
     </main>
   );
 }
