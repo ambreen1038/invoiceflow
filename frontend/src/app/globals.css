@@ -77,7 +77,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
   overflow-y: auto;
 }
 .sidebar-brand { display: flex; align-items: center; gap: 9px; padding: 0 8px; color: #fff; text-decoration: none; font-weight: 700; font-size: 15px; }
-.sidebar-logo { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, #4f7cff, #2347c9); display: grid; place-items: center; flex: none; }
+.sidebar-logo { display: grid; place-items: center; flex: none; }
 .sidebar-upload {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   background: #2f5bea; border: 1px solid #2f5bea; color: #fff; font-weight: 600;
@@ -412,7 +412,7 @@ tbody tr:nth-child(n+6) { animation-delay: 120ms; }
   pointer-events: none;
 }
 .auth-brand-top { display: flex; align-items: center; gap: 10px; z-index: 1; }
-.auth-logo { width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,.14); display: grid; place-items: center; border: 1px solid rgba(255,255,255,.25); box-shadow: 0 4px 14px rgba(0,0,0,.15); }
+.auth-logo { display: grid; place-items: center; }
 .auth-wordmark { font-weight: 700; font-size: 17px; letter-spacing: -.01em; }
 .auth-brand-copy { z-index: 1; max-width: 420px; }
 .auth-brand-copy h1 { font-size: 30px; line-height: 1.2; margin: 0 0 10px; letter-spacing: -.01em; }
@@ -530,7 +530,7 @@ tbody tr:nth-child(n+6) { animation-delay: 120ms; }
   border-bottom: 1px solid var(--line);
 }
 .landing-nav-brand { display: flex; align-items: center; gap: 9px; text-decoration: none; color: var(--ink); font-weight: 700; font-size: 15px; }
-.landing-nav-logo { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4f7cff, #2347c9); display: grid; place-items: center; flex: none; box-shadow: 0 2px 8px rgba(47,91,234,.35); }
+.landing-nav-logo { display: grid; place-items: center; flex: none; }
 .landing-nav-actions { display: flex; align-items: center; gap: 14px; }
 .landing-nav-signin { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 600; transition: color var(--dur-fast) var(--ease); }
 .landing-nav-signin:hover { color: var(--ink); }

@@ -38,7 +38,7 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         <div className="sidebar-top-row">
           <Link href="/dashboard" className="sidebar-brand" onClick={onClose}>
             <span className="sidebar-logo">
-              <Logo size={17} />
+              <Logo size={28} />
             </span>
             InvoiceFlow
           </Link>

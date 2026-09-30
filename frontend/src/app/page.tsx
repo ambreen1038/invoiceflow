@@ -76,7 +76,7 @@ export default function Landing() {
       <nav className="landing-nav">
         <Link href="/" className="landing-nav-brand">
           <span className="landing-nav-logo">
-            <Logo size={17} />
+            <Logo size={32} />
           </span>
           InvoiceFlow
         </Link>

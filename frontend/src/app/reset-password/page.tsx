@@ -74,7 +74,7 @@ export default function ResetPassword() {
         <div className="auth-brand-glow" />
         <div className="auth-brand-top">
           <span className="auth-logo">
-            <Logo size={20} />
+            <Logo size={38} />
           </span>
           <span className="auth-wordmark">InvoiceFlow</span>
         </div>
